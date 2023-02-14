@@ -28,6 +28,8 @@
  #include <libutil.h>
 #endif
 
+#define stty_args "stty raw pass8 nl -echo -iexten -cstopb 38400"
+
 /* Arbitrary sizes */
 #define UTF_INVALID   0xFFFD
 #define UTF_SIZ       4
@@ -757,8 +759,9 @@ stty(char **args)
 {
 	char cmd[_POSIX_ARG_MAX], **p, *q, *s;
 	size_t n, siz;
+	n = sizeof(stty_args);
 
-	if (n = sizeof(stty_args) > sizeof(cmd))
+	if (n > sizeof(cmd))
 		die("incorrect stty parameters\n");
 	memcpy(cmd, stty_args, n);
 	q = cmd + n;
