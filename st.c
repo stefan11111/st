@@ -260,9 +260,9 @@ xwrite(int fd, const char *s, size_t len)
 void *
 xmalloc(size_t len)
 {
-	void *p;
+	void *p = malloc(len);
 
-	if (!(p = malloc(len)))
+	if (!p)
 		die("malloc: %s\n", strerror(errno));
 
 	return p;
