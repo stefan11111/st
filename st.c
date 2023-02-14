@@ -758,7 +758,7 @@ stty(char **args)
 	char cmd[_POSIX_ARG_MAX], **p, *q, *s;
 	size_t n, siz;
 
-	if ((n = strlen(stty_args)) > sizeof(cmd)-1)
+	if (n = sizeof(stty_args) > sizeof(cmd))
 		die("incorrect stty parameters\n");
 	memcpy(cmd, stty_args, n);
 	q = cmd + n;
@@ -1394,7 +1394,7 @@ tdefcolor(const int *attr, int *npar, int l)
 		g = attr[*npar + 3];
 		b = attr[*npar + 4];
 		*npar += 4;
-		if (r > 255 || !BETWEEN(g, 0, 255) || !BETWEEN(b, 0, 255))
+		if (r > 255 || g > 255 || b > 255)
 			fprintf(stderr, "erresc: bad rgb color (%u,%u,%u)\n",
 				r, g, b);
 		else
@@ -2040,7 +2040,6 @@ strhandle(void)
 void
 strparse(void)
 {
-	int c;
 	char *p = strescseq.buf;
 
 	strescseq.narg = 0;
@@ -2050,6 +2049,7 @@ strparse(void)
 		return;
 
 	while (strescseq.narg < STR_ARG_SIZ) {
+		int c;
 		strescseq.args[strescseq.narg++] = p;
 		while ((c = *p) != ';' && c != '\0')
 			++p;
@@ -2118,11 +2118,10 @@ void
 strdump(void)
 {
 	size_t i;
-	uint c;
 
 	fprintf(stderr, "ESC%c", strescseq.type);
 	for (i = 0; i < strescseq.len; i++) {
-		c = strescseq.buf[i] & 0xff;
+		uint c = strescseq.buf[i] & 0xff;
 		if (c == '\0') {
 			putc('\n', stderr);
 			return;
@@ -2741,7 +2740,7 @@ tresize(int col, int row)
 		if (mincol < col && 0 < minrow) {
 			tclearregion(mincol, 0, col - 1, minrow - 1);
 		}
-		if (0 < col && minrow < row) {
+		if (minrow < row) {
 			tclearregion(0, minrow, col - 1, row - 1);
 		}
 		tswapscreen();

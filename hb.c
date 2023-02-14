@@ -56,7 +56,11 @@ hbfindfont(XftFont *match)
 	}
 
 	/* Font not found in cache, caching it now. */
-	hbfontcache = realloc(hbfontcache, sizeof(HbFontMatch) * (hbfontslen + 1));
+	void *tmp = realloc(hbfontcache, sizeof(HbFontMatch) * (hbfontslen + 1));
+	if (!tmp) {
+		free(hbfontcache);
+	}
+	hbfontcache = (HbFontMatch*)tmp;
 	FT_Face face = XftLockFace(match);
 	hb_font_t *font = hb_ft_font_create(face, NULL);
 	if (font == NULL)
