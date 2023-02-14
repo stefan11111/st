@@ -507,7 +507,6 @@ bpress(XEvent *e)
 {
 	int btn = e->xbutton.button;
 	struct timespec now;
-	int snap;
 
 	if (1 <= btn && btn <= 11)
 		buttons |= 1 << (btn-1);
@@ -525,6 +524,7 @@ bpress(XEvent *e)
 		 * If the user clicks below predefined timeouts specific
 		 * snapping behaviour is exposed.
 		 */
+                int snap;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		if (TIMEDIFF(now, xsel.tclick2) <= tripleclicktimeout) {
 			snap = SNAP_LINE;
@@ -1136,7 +1136,7 @@ xloadsparefonts(void)
 
 	/* Calculate count of spare fonts */
 	fc = sizeof(font2) / sizeof(*font2);
-	if (fc == 0)
+	if (!sizeof(font2))
 		return;
 
 	/* Allocate memory for cache entries. */
@@ -1401,7 +1401,7 @@ int
 xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x, int y)
 {
 	float winx = borderpx + x * win.cw, winy = borderpx + y * win.ch, xp, yp;
-	ushort mode, prevmode = USHRT_MAX;
+	ushort prevmode = USHRT_MAX;
 	Font *font = &dc.font;
 	int frcflags = FRC_NORMAL;
 	float runewidth = win.cw;
@@ -1416,7 +1416,7 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 	for (i = 0, xp = winx, yp = winy + font->ascent; i < len; ++i) {
 		/* Fetch rune and mode for current glyph. */
 		rune = glyphs[i].u;
-		mode = glyphs[i].mode;
+		ushort mode = glyphs[i].mode;
 
 		/* Skip dummy wide-character spacing. */
 		if (mode & ATTR_WDUMMY)
@@ -1579,7 +1579,7 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 	}
 
 	/* Change basic system colors [0-7] to bright system colors [8-15] */
-	if ((base.mode & ATTR_BOLD_FAINT) == ATTR_BOLD && BETWEEN(base.fg, 0, 7))
+	if ((base.mode & ATTR_BOLD_FAINT) == ATTR_BOLD && base.fg <= 7)
 		fg = &dc.col[base.fg + 8];
 
 	if (IS_SET(MODE_REVERSE)) {
@@ -2121,7 +2121,7 @@ run(void)
 	int w = win.w, h = win.h;
 	fd_set rfd;
 	int xfd = XConnectionNumber(xw.dpy), ttyfd, xev, drawing;
-	struct timespec seltv, *tv, now, lastblink, trigger;
+	struct timespec seltv, now, lastblink, trigger;
 	double timeout;
 
 	/* Waiting for window mapping */
@@ -2153,7 +2153,7 @@ run(void)
 
 		seltv.tv_sec = timeout / 1E3;
 		seltv.tv_nsec = 1E6 * (timeout - 1E3 * seltv.tv_sec);
-		tv = timeout >= 0 ? &seltv : NULL;
+		struct timespec *tv = timeout >= 0 ? &seltv : NULL;
 
 		if (pselect(MAX(xfd, ttyfd)+1, &rfd, NULL, NULL, tv, NULL) < 0) {
 			if (errno == EINTR)

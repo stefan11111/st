@@ -244,10 +244,9 @@ ssize_t
 xwrite(int fd, const char *s, size_t len)
 {
 	size_t aux = len;
-	ssize_t r;
 
 	while (len > 0) {
-		r = write(fd, s, len);
+		ssize_t r = write(fd, s, len);
 		if (r < 0)
 			return r;
 		len -= r;
@@ -536,10 +535,9 @@ selected(int x, int y)
 void
 selsnap(int *x, int *y, int direction)
 {
-	int newx, newy, xt, yt;
-	int delim, prevdelim;
+	int xt, yt;
 	const Glyph *gp, *prevgp;
-
+	int prevdelim;
 	switch (sel.snap) {
 	case SNAP_WORD:
 		/*
@@ -549,8 +547,8 @@ selsnap(int *x, int *y, int direction)
 		prevgp = &TLINE(*y)[*x];
 		prevdelim = ISDELIM(prevgp->u);
 		for (;;) {
-			newx = *x + direction;
-			newy = *y;
+			int newx = *x + direction;
+			int newy = *y;
 			if (!BETWEEN(newx, 0, term.col - 1)) {
 				newy += direction;
 				newx = (newx + term.col) % term.col;
@@ -569,7 +567,7 @@ selsnap(int *x, int *y, int direction)
 				break;
 
 			gp = &TLINE(newy)[newx];
-			delim = ISDELIM(gp->u);
+			int delim = ISDELIM(gp->u);
 			if (!(gp->mode & ATTR_WDUMMY) && (delim != prevdelim
 					|| (delim && gp->u != prevgp->u)))
 				break;
@@ -610,7 +608,7 @@ char *
 getsel(void)
 {
 	char *str, *ptr;
-	int y, bufsize, lastx, linelen;
+	int y, bufsize, lastx;
 	const Glyph *gp, *last;
 
 	if (sel.ob.x == -1)
@@ -621,7 +619,8 @@ getsel(void)
 
 	/* append every set & selected glyph to the selection */
 	for (y = sel.nb.y; y <= sel.ne.y; y++) {
-		if ((linelen = tlinelen(y)) == 0) {
+		int linelen = tlinelen(y);
+		if (linelen == 0) {
 			*ptr++ = '\n';
 			continue;
 		}
@@ -1211,7 +1210,6 @@ void
 csiparse(void)
 {
 	char *p = csiescseq.buf, *np;
-	long int v;
 
 	csiescseq.narg = 0;
 	if (*p == '?') {
@@ -1222,7 +1220,7 @@ csiparse(void)
 	csiescseq.buf[csiescseq.len] = '\0';
 	while (p < csiescseq.buf+csiescseq.len) {
 		np = NULL;
-		v = strtol(p, &np, 10);
+		long int v = strtol(p, &np, 10);
 		if (np == p)
 			v = 0;
 		if (v == LONG_MAX || v == LONG_MIN)
@@ -1396,7 +1394,7 @@ tdefcolor(const int *attr, int *npar, int l)
 		g = attr[*npar + 3];
 		b = attr[*npar + 4];
 		*npar += 4;
-		if (!BETWEEN(r, 0, 255) || !BETWEEN(g, 0, 255) || !BETWEEN(b, 0, 255))
+		if (r > 255 || !BETWEEN(g, 0, 255) || !BETWEEN(b, 0, 255))
 			fprintf(stderr, "erresc: bad rgb color (%u,%u,%u)\n",
 				r, g, b);
 		else
@@ -1533,12 +1531,10 @@ tsetattr(const int *attr, int l)
 void
 tsetscroll(int t, int b)
 {
-	int temp;
-
 	LIMIT(t, 0, term.row-1);
 	LIMIT(b, 0, term.row-1);
 	if (t > b) {
-		temp = t;
+		int temp = t;
 		t = b;
 		b = temp;
 	}
@@ -1892,11 +1888,10 @@ void
 csidump(void)
 {
 	size_t i;
-	uint c;
 
 	fprintf(stderr, "ESC[");
 	for (i = 0; i < csiescseq.len; i++) {
-		c = csiescseq.buf[i] & 0xff;
+		char c = csiescseq.buf[i] & 0xff;
 		if (isprint(c)) {
 			putc(c, stderr);
 		} else if (c == '\n') {
@@ -1946,7 +1941,7 @@ osc_color_response(int num, int index, int is_osc4)
 void
 strhandle(void)
 {
-	char *p = NULL, *dec;
+	char *p = NULL;
 	int j, narg, par;
 	const struct { int idx; char *str; } osc_table[] = {
 		{ defaultfg, "foreground" },
@@ -1977,7 +1972,7 @@ strhandle(void)
 			return;
 		case 52:
 			if (narg > 2 && allowwindowops) {
-				dec = base64dec(strescseq.args[2]);
+				char *dec = base64dec(strescseq.args[2]);
 				if (dec) {
 					xsetsel(dec);
 					xclipcopy();
@@ -2204,14 +2199,15 @@ tdumpsel(void)
 void
 tdumpline(int n)
 {
-	char buf[UTF_SIZ];
 	const Glyph *bp, *end;
 
 	bp = &term.line[n][0];
 	end = &bp[MIN(tlinelen(n), term.col) - 1];
 	if (bp != end || bp->u != ' ') {
-		for ( ; bp <= end; ++bp)
+		for ( ; bp <= end; ++bp) {
+			char buf[UTF_SIZ];
 			tprinter(buf, utf8encode(bp->u, buf));
+                }
 	}
 	tprinter("\n", 1);
 }
@@ -2239,7 +2235,8 @@ tputtab(int n)
 			for (--x; x > 0 && !term.tabs[x]; --x)
 				/* nothing */ ;
 	}
-	term.c.x = LIMIT(x, 0, term.col-1);
+	x = x > term.col-1 ? term.col-1 : x;
+	term.c.x = x;
 }
 
 void
@@ -2268,11 +2265,9 @@ tdeftran(char ascii)
 void
 tdectest(char c)
 {
-	int x, y;
-
 	if (c == '8') { /* DEC screen alignment test. */
-		for (x = 0; x < term.col; ++x) {
-			for (y = 0; y < term.row; ++y)
+		for (int x = 0; x < term.col; ++x) {
+			for (int y = 0; y < term.row; ++y)
 				tsetchar('E', &term.c.attr, x, y);
 		}
 	}
@@ -2664,7 +2659,6 @@ tresize(int col, int row)
 	int i, j;
 	int tmp;
 	int minrow, mincol;
-	int *bp;
 	TCursor c;
 
 	tmp = col;
@@ -2725,7 +2719,7 @@ tresize(int col, int row)
 		term.alt[i] = xmalloc(col * sizeof(Glyph));
 	}
 	if (col > term.maxcol) {
-		bp = term.tabs + term.maxcol;
+		int *bp = term.tabs + term.maxcol;
 
 		memset(bp, 0, sizeof(*term.tabs) * (col - term.maxcol));
 		while (--bp > term.tabs && !*bp)

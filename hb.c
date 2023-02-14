@@ -124,14 +124,13 @@ hbtransformsegment(XftFont *xfont, const Glyph *string, hb_codepoint_t *codepoin
 		return;
 
 	Rune rune;
-	ushort mode = USHRT_MAX;
 	hb_buffer_t *buffer = hb_buffer_create();
 	hb_buffer_set_direction(buffer, HB_DIRECTION_LTR);
 
 	/* Fill buffer with codepoints. */
 	for (int i = start; i < (start+length); i++) {
 		rune = string[i].u;
-		mode = string[i].mode;
+		ushort mode = string[i].mode;
 		if (mode & ATTR_WDUMMY)
 			rune = 0x0020;
 		hb_buffer_add_codepoints(buffer, &rune, 1, 0, 1);
